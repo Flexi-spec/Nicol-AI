@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Nicol by Flexi AI Labs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        font-family: monospace;
+        background: #050505;
+        color: #eaffea;
+    }
+
+    /* Splash */
+    #splash {
+        position: fixed;
+        inset: 0;
+        background: radial-gradient(circle at center, #00ff99 0%, #020202 60%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        animation: splashOut 1s ease forwards;
+        animation-delay: 2.4s;
+    }
+
+    #splash h1 {
+        font-size: 4rem;
+        letter-spacing: 6px;
+        color: #00ff99;
+        text-shadow: 0 0 30px #00ff99;
+        margin: 0;
+    }
+
+    #splash p {
+        opacity: 0.8;
+        margin-top: 10px;
+    }
+
+    @keyframes splashOut {
+        to {
+            opacity: 0;
+            pointer-events: none;
+        }
+    }
+
+    /* Chat Layout */
+    #app {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        opacity: 0;
+        animation: appIn 1s ease forwards;
+        animation-delay: 2.8s;
+    }
+
+    @keyframes appIn {
+        to { opacity: 1; }
+    }
+
+    header {
+        padding: 18px 24px;
+        border-bottom: 1px solid #00ff99;
+        color: #00ff99;
+        font-weight: bold;
+    }
+
+    #chat {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .msg {
+        max-width: 75%;
+        padding: 14px 16px;
+        line-height: 1.5;
+        background: #020202;
+        border: 1px solid #00ff99;
+        white-space: pre-wrap;
+    }
+
+    .user {
+        align-self: flex-end;
+        background: rgba(0, 255, 153, 0.1);
+    }
+
+    .bot {
+        align-self: flex-start;
+    }
+
+    footer {
+        padding: 16px;
+        border-top: 1px solid #00ff99;
+        display: flex;
+        gap: 10px;
+    }
+
+    input {
+        flex: 1;
+        padding: 14px;
+        background: #020202;
+        border: 1px solid #00ff99;
+        color: #eaffea;
+        font-size: 1rem;
+        outline: none;
+    }
+
+    button {
+        padding: 14px 20px;
+        background: #00ff99;
+        border: none;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .thinking {
+        opacity: 0.6;
+        animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+        50% { opacity: 1; }
+    }
+</style>
+</head>
+
+<body>
+
+<div id="splash">
+    <h1>NICOL</h1>
+    <p>Multi Model AI Orchestrator</p>
+</div>
+
+<div id="app">
+    <header>
+        Nicol Orchestrator
+    </header>
+
+    <div id="chat"></div>
+
+    <footer>
+        <input id="p" placeholder="Message Nicol">
+        <button onclick="ask()">Send</button>
+    </footer>
+</div>
+<script>
+async function ask() {
+    const input = document.getElementById("p");
+    const chat = document.getElementById("chat");
+    const prompt = input.value.trim();
+    
+    // 1. Basic validation
+    if (!prompt) return;
+
+    // 2. Display User Message
+    const userMsg = document.createElement("div");
+    userMsg.className = "msg user";
+    userMsg.innerText = prompt;
+    chat.appendChild(userMsg);
+
+    // 3. Clear input and prepare Nicol's "Thinking" box
+    input.value = "";
+    const botMsg = document.createElement("div");
+    botMsg.className = "msg bot thinking";
+    botMsg.innerText = "Nicol is consulting models...";
+    chat.appendChild(botMsg);
+    
+    // Auto-scroll to bottom
+    chat.scrollTop = chat.scrollHeight;
+
+    try {
+        // 4. Send prompt to the SECURE Vercel backend
+        const res = await fetch("/api/nicol", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt })
+        });
+
+        if (!res.ok) throw new Error("Nicol's brain is offline");
+
+        const data = await res.json();
+        
+        // 5. Update bot message with final synthesized answer
+        botMsg.classList.remove("thinking");
+        botMsg.innerText = data.text || "No response returned";
+        
+    } catch (err) {
+        // Handle connection or API errors
+        botMsg.classList.remove("thinking");
+        botMsg.innerText = "Error: " + err.message;
+    }
+
+    // Final scroll
+    chat.scrollTop = chat.scrollHeight;
+}
+
+// Allow "Enter" key to send
+document.getElementById("p").addEventListener("keydown", e => {
+    if (e.key === "Enter") ask();
+});
+</script>
+
+
+</body>
+</html>
